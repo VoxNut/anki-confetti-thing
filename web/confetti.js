@@ -8,7 +8,7 @@
     canvas: null,
     timer: 0,
     worker: null,
-    thumbsDown: null,
+    textShapes: new Map(),
   };
   const clamp = (value, low, high) => Math.max(low, Math.min(high, Number(value)));
   const count = (base, intensity) =>
@@ -56,6 +56,10 @@
         return ["circle"];
       case "stars":
         return ["star"];
+      case "emoji": {
+        const shape = textShape(payload.emoji || "🎉");
+        return shape ? [shape] : ["circle"];
+      }
       case "preset":
         return presetShapes;
       case "squares":
@@ -72,6 +76,18 @@
     const shapes = configuredShapes(payload, presetShapes);
     if (shapes?.length) options.shapes = shapes;
     return options;
+  }
+
+  function textShape(text) {
+    if (state.textShapes.has(text)) return state.textShapes.get(text);
+    if (typeof window.confetti.shapeFromText !== "function") return null;
+    try {
+      const shape = window.confetti.shapeFromText({ text, scalar: 1.6 });
+      state.textShapes.set(text, shape);
+      return shape;
+    } catch (_error) {
+      return null;
+    }
   }
 
   function origin(payload) {
@@ -196,22 +212,13 @@
   };
 
   function launchAgain(fire, payload) {
-    if (!state.thumbsDown && typeof window.confetti.shapeFromText === "function") {
-      try {
-        state.thumbsDown = window.confetti.shapeFromText({
-          text: "👎",
-          scalar: 2,
-        });
-      } catch (_error) {
-        // Older web engines fall back to ordinary square particles.
-      }
-    }
+    const shape = textShape(payload.againEmoji || "👎");
     burst(fire, payload, 28, {
       spread: spread(payload, 100),
       startVelocity: 24,
       gravity: 1.05,
       scalar: 1.6,
-      shapes: state.thumbsDown ? [state.thumbsDown] : ["square"],
+      shapes: shape ? [shape] : ["square"],
       origin: { x: 0.5, y: 0.5 },
     });
   }

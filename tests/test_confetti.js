@@ -42,6 +42,8 @@ const base = {
   intensity: 100,
   originMode: "center",
   shape: "squares",
+  emoji: "✨",
+  againEmoji: "😭",
   spread: 180,
   reducedMotion: true,
   worker: true,
@@ -62,10 +64,18 @@ assert.deepEqual(launches[0].shapes, ["square"]);
 assert.deepEqual(launches[1].shapes, ["square"]);
 assert.deepEqual(launches[2].shapes, ["square"]);
 assert.deepEqual(launches[3].origin, { x: 0.5, y: 0.5 });
-assert.equal(launches[3].shapes[0].text, "👎");
+assert.equal(launches[3].shapes[0].text, "😭");
 assert.equal(launches[3].spread, 180);
 
+window.ankiConfetti.fire({
+  ...base,
+  ease: 3,
+  preset: "simple_burst",
+  shape: "emoji",
+});
+assert.equal(launches[4].shapes[0].text, "✨");
+
 window.ankiConfetti.stop();
-assert.equal(resetCount, 3);
+assert.equal(resetCount, 4);
 
 console.log("confetti runtime smoke test passed");

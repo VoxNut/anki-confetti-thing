@@ -16,8 +16,9 @@ Use Anki's add-on Config window for a live UI. Its underlying fields are:
   or `custom`. Single-origin presets launch from this point.
 - `custom_origin_x` / `custom_origin_y`: percentages used by the `custom`
   origin.
-- `shape`: `squares`, `circles`, `mixed`, `stars`, or `preset`. The first four
-  override a preset's normal shapes; `preset` uses its built-in shapes.
+- `shape`: `squares`, `circles`, `mixed`, `stars`, `emoji`, or `preset`.
+- `emoji`: character used when `shape` is `emoji`.
+- `again_emoji`: character used by the special Again burst, such as `😭`.
 - `spread`: launch width in degrees, from 10 to 360. Try 180 for a wide burst.
 - `respect_reduced_motion`: honor Windows' reduced-motion preference. This is
   off by default because Windows may report reduced motion even when you
@@ -28,5 +29,5 @@ Invalid values safely fall back to defaults. Changes take effect on the next
 answer without restarting Anki. Settings are cached between changes, so
 answering a card does not read configuration files from disk.
 
-`Again` always uses a centered thumbs-down emoji burst, independently of the
-normal confetti shape and origin.
+`Again` always uses its configured emoji in a centered burst, independently of
+the normal confetti shape and origin.

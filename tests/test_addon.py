@@ -96,6 +96,8 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.intensity, 100)
         self.assertEqual(settings.origin_mode, "center")
         self.assertEqual(settings.shape, "squares")
+        self.assertEqual(settings.emoji, "🎉")
+        self.assertEqual(settings.again_emoji, "👎")
         self.assertEqual(settings.spread, 100)
         self.assertFalse(settings.respect_reduced_motion)
 
@@ -110,6 +112,8 @@ class SettingsTests(unittest.TestCase):
                 "delay_ms": "bad",
                 "origin_mode": "unknown",
                 "shape": "triangles",
+                "emoji": "",
+                "again_emoji": 42,
                 "spread": 999,
             }
         )
@@ -121,6 +125,8 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.delay_ms, 80)
         self.assertEqual(settings.origin_mode, "center")
         self.assertEqual(settings.shape, "squares")
+        self.assertEqual(settings.emoji, "🎉")
+        self.assertEqual(settings.again_emoji, "👎")
         self.assertEqual(settings.spread, 360)
 
     def test_legacy_palette_and_option_names_are_migrated(self):
@@ -151,6 +157,8 @@ class SettingsTests(unittest.TestCase):
                 "custom_origin_x": 25,
                 "custom_origin_y": 75,
                 "shape": "circles",
+                "emoji": "✨",
+                "again_emoji": "😭",
                 "spread": 180,
             }
         )
@@ -158,6 +166,8 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(payload["originMode"], "custom")
         self.assertEqual(payload["customOrigin"], {"x": 0.25, "y": 0.75})
         self.assertEqual(payload["shape"], "circles")
+        self.assertEqual(payload["emoji"], "✨")
+        self.assertEqual(payload["againEmoji"], "😭")
         self.assertEqual(payload["spread"], 180)
 
     def test_canonical_config_drops_legacy_bloat(self):
@@ -166,6 +176,8 @@ class SettingsTests(unittest.TestCase):
                 "palette": "pastel",
                 "particle_multiplier": 141,
                 "trigger_delay_ms": 0,
+                "emoji": "✨",
+                "again_emoji": "😭",
                 "spread": 180,
             }
         )
@@ -174,6 +186,8 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(config["intensity"], 141)
         self.assertEqual(config["delay_ms"], 0)
         self.assertEqual(config["spread"], 180)
+        self.assertEqual(config["emoji"], "✨")
+        self.assertEqual(config["again_emoji"], "😭")
         self.assertNotIn("palette", config)
         self.assertNotIn("particle_multiplier", config)
 

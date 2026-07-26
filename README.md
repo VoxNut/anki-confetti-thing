@@ -11,7 +11,7 @@ answers with confetti. Each answer can be enabled or disabled independently.
 - A new answer cancels unfinished effects, preventing stacked animations.
 - Particle counts and animation duration are bounded.
 - Origin and shape choices apply consistently across single-origin celebration
-  presets; Again has its own centered thumbs-down effect.
+  presets. Normal confetti and Again can each use a configurable emoji.
 - There are no background polls, event listeners, cross-webview messages, or
   custom settings windows.
 - Windows/browser reduced-motion preferences can optionally be respected.
@@ -34,7 +34,7 @@ In Anki, open **Tools → Add-ons**, select **Tiramisu's Confetti Thing**, and
 choose **Config**. A compact settings window provides:
 
 - Live embedded previews for Good and Again.
-- Trigger, preset, origin, shape, color, intensity, and spread controls.
+- Trigger, preset, origin, shape, emoji, color, intensity, and spread controls.
 - Fireworks duration, review delay, reduced-motion, and worker options.
 
 Preview buttons use the current controls immediately, without saving first.

@@ -78,6 +78,8 @@ def loaded(ok: bool) -> None:
           duration: 800,
           originMode: "center",
           shape: "squares",
+          emoji: "✨",
+          againEmoji: "😭",
           spread: 180,
           reducedMotion: false,
           worker: true

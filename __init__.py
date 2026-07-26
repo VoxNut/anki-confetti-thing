@@ -28,7 +28,7 @@ PRESETS = frozenset(
 ORIGINS = frozenset(
     {"answer_button", "center", "top", "bottom", "left", "right", "custom"}
 )
-SHAPES = frozenset({"preset", "mixed", "squares", "circles", "stars"})
+SHAPES = frozenset({"preset", "mixed", "squares", "circles", "stars", "emoji"})
 PALETTES = {
     "tiramisu": ("#f6bd60", "#f7ede2", "#f5cac3", "#84a59d", "#8d5524"),
     "anki": ("#2f7de1", "#45b7d1", "#ffffff", "#ffcd56", "#4bc0c0"),
@@ -56,6 +56,12 @@ def _integer(value: Any, default: int, minimum: int, maximum: int) -> int:
         return max(minimum, min(maximum, int(value)))
     except (TypeError, ValueError):
         return default
+
+
+def _emoji(value: Any, default: str) -> str:
+    if not isinstance(value, str):
+        return default
+    return value.strip()[:16] or default
 
 
 def _colors(config: Mapping[str, Any]) -> tuple[str, ...]:
@@ -90,6 +96,8 @@ class Settings:
     custom_origin_x: int
     custom_origin_y: int
     shape: str
+    emoji: str
+    again_emoji: str
     spread: int
     respect_reduced_motion: bool
     use_worker: bool
@@ -134,6 +142,8 @@ class Settings:
             custom_origin_x=_integer(config.get("custom_origin_x"), 50, 0, 100),
             custom_origin_y=_integer(config.get("custom_origin_y"), 50, 0, 100),
             shape=shape,
+            emoji=_emoji(config.get("emoji"), "🎉"),
+            again_emoji=_emoji(config.get("again_emoji"), "👎"),
             spread=_integer(config.get("spread"), 100, 10, 360),
             respect_reduced_motion=_boolean(
                 config.get("respect_reduced_motion"), False
@@ -162,6 +172,8 @@ class Settings:
                 "y": self.custom_origin_y / 100,
             },
             "shape": self.shape,
+            "emoji": self.emoji,
+            "againEmoji": self.again_emoji,
             "spread": self.spread,
             "reducedMotion": self.respect_reduced_motion,
             "worker": self.use_worker,
@@ -183,6 +195,8 @@ class Settings:
             "custom_origin_x": self.custom_origin_x,
             "custom_origin_y": self.custom_origin_y,
             "shape": self.shape,
+            "emoji": self.emoji,
+            "again_emoji": self.again_emoji,
             "spread": self.spread,
             "respect_reduced_motion": self.respect_reduced_motion,
             "use_worker": self.use_worker,

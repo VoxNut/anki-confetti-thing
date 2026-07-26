@@ -19,6 +19,8 @@
   "custom_origin_x": 50,
   "custom_origin_y": 50,
   "shape": "squares",
+  "emoji": "🎉",
+  "again_emoji": "👎",
   "spread": 100,
   "respect_reduced_motion": false,
   "use_worker": true

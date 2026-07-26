@@ -46,6 +46,7 @@ SHAPE_LABELS = {
     "circles": "Circles",
     "mixed": "Mixed",
     "stars": "Stars",
+    "emoji": "Emoji",
     "preset": "Preset default",
 }
 
@@ -75,7 +76,7 @@ class ConfettiSettingsDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent or mw)
         self.setWindowTitle("Tiramisu's Confetti Thing")
-        self.resize(760, 760)
+        self.resize(760, 840)
         current = Settings.load()
 
         root = QVBoxLayout(self)
@@ -140,6 +141,20 @@ class ConfettiSettingsDialog(QDialog):
             self.shape.addItem(label, key)
         _select(self.shape, current.shape)
         form.addRow("Shape", self.shape)
+        qconnect(self.shape.currentIndexChanged, self._refresh_shape_controls)
+
+        self.emoji = QLineEdit(current.emoji, self)
+        self.emoji.setMaxLength(16)
+        self.emoji.setPlaceholderText("🎉")
+        form.addRow("Confetti emoji", self.emoji)
+
+        self.again_emoji = QLineEdit(current.again_emoji, self)
+        self.again_emoji.setMaxLength(16)
+        self.again_emoji.setPlaceholderText("😭")
+        self.again_emoji.setToolTip(
+            "Emoji used by the special Again burst. Try 😭, 👎, or 💀."
+        )
+        form.addRow("Again emoji", self.again_emoji)
 
         self.colors = QLineEdit(", ".join(current.colors), self)
         self.colors.setPlaceholderText("#ff0000, #00ff00, #0000ff")
@@ -220,6 +235,7 @@ class ConfettiSettingsDialog(QDialog):
             default_css=False,
         )
         self._refresh_origin_controls()
+        self._refresh_shape_controls()
 
     def _preview_loaded(self, ok: bool) -> None:
         self.preview_again.setEnabled(ok)
@@ -229,6 +245,9 @@ class ConfettiSettingsDialog(QDialog):
         enabled = self.origin.currentData() == "custom"
         self.origin_x.setEnabled(enabled)
         self.origin_y.setEnabled(enabled)
+
+    def _refresh_shape_controls(self, *_args: Any) -> None:
+        self.emoji.setEnabled(self.shape.currentData() == "emoji")
 
     def _current(self) -> Settings:
         colors = self.colors.text().replace(";", ",").split(",")
@@ -244,6 +263,8 @@ class ConfettiSettingsDialog(QDialog):
                 "custom_origin_x": self.origin_x.value(),
                 "custom_origin_y": self.origin_y.value(),
                 "shape": self.shape.currentData(),
+                "emoji": self.emoji.text(),
+                "again_emoji": self.again_emoji.text(),
                 "colors": [color.strip() for color in colors],
                 "intensity": self.intensity.value(),
                 "spread": self.spread.value(),

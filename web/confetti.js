@@ -13,6 +13,10 @@
   const clamp = (value, low, high) => Math.max(low, Math.min(high, Number(value)));
   const count = (base, intensity) =>
     Math.max(1, Math.round(base * clamp(intensity || 100, 25, 200) / 100));
+  const spread = (payload, fallback) =>
+    Number.isFinite(Number(payload.spread))
+      ? clamp(payload.spread, 10, 360)
+      : fallback;
 
   function stop() {
     clearInterval(state.timer);
@@ -112,7 +116,7 @@
     button_cannon(fire, payload) {
       burst(fire, payload, 72, {
         angle: angle(payload.ease),
-        spread: 58,
+        spread: spread(payload, 58),
         startVelocity: 46,
         gravity: 0.9,
         scalar: 0.95,
@@ -122,7 +126,7 @@
 
     simple_burst(fire, payload) {
       burst(fire, payload, 48, {
-        spread: 64,
+        spread: spread(payload, 64),
         startVelocity: 30,
         scalar: 0.8,
         origin: origin(payload),
@@ -132,11 +136,12 @@
     realistic_burst(fire, payload) {
       const shared = { ...defaults(payload), origin: origin(payload) };
       const total = count(150, payload.intensity);
+      const configuredSpread = spread(payload, 100);
       [
-        [0.25, { spread: 26, startVelocity: 52 }],
-        [0.2, { spread: 60 }],
-        [0.35, { spread: 100, decay: 0.91, scalar: 0.8 }],
-        [0.2, { spread: 120, startVelocity: 28, scalar: 1.1 }],
+        [0.25, { spread: configuredSpread, startVelocity: 52 }],
+        [0.2, { spread: configuredSpread }],
+        [0.35, { spread: configuredSpread, decay: 0.91, scalar: 0.8 }],
+        [0.2, { spread: configuredSpread, startVelocity: 28, scalar: 1.1 }],
       ].forEach(([ratio, options]) =>
         fire({ ...shared, ...options, particleCount: Math.round(total * ratio) })
       );
@@ -152,7 +157,7 @@
         }
         burst(fire, payload, 32, {
           startVelocity: 28,
-          spread: 360,
+          spread: spread(payload, 360),
           ticks: 55,
           origin: { x: Math.random(), y: Math.random() * 0.42 + 0.08 },
         });
@@ -164,13 +169,13 @@
     stars(fire, payload) {
       const point = origin(payload);
       burst(fire, payload, 38, {
-        spread: 70,
+        spread: spread(payload, 70),
         startVelocity: 40,
         scalar: 1.15,
         origin: point,
       }, ["star"]);
       burst(fire, payload, 24, {
-        spread: 90,
+        spread: spread(payload, 90),
         startVelocity: 24,
         scalar: 0.65,
         origin: point,
@@ -182,7 +187,7 @@
       const shared = {
         ...defaults(payload),
         particleCount: pieces,
-        spread: 55,
+        spread: spread(payload, 55),
         startVelocity: 42,
       };
       fire({ ...shared, angle: 60, origin: { x: 0, y: 0.86 } });
@@ -202,7 +207,7 @@
       }
     }
     burst(fire, payload, 28, {
-      spread: 100,
+      spread: spread(payload, 100),
       startVelocity: 24,
       gravity: 1.05,
       scalar: 1.6,

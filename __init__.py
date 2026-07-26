@@ -90,6 +90,7 @@ class Settings:
     custom_origin_x: int
     custom_origin_y: int
     shape: str
+    spread: int
     respect_reduced_motion: bool
     use_worker: bool
 
@@ -133,6 +134,7 @@ class Settings:
             custom_origin_x=_integer(config.get("custom_origin_x"), 50, 0, 100),
             custom_origin_y=_integer(config.get("custom_origin_y"), 50, 0, 100),
             shape=shape,
+            spread=_integer(config.get("spread"), 100, 10, 360),
             respect_reduced_motion=_boolean(
                 config.get("respect_reduced_motion"), False
             ),
@@ -160,8 +162,30 @@ class Settings:
                 "y": self.custom_origin_y / 100,
             },
             "shape": self.shape,
+            "spread": self.spread,
             "reducedMotion": self.respect_reduced_motion,
             "worker": self.use_worker,
+        }
+
+    def to_mapping(self) -> dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "trigger_again": self.trigger_again,
+            "trigger_hard": self.trigger_hard,
+            "trigger_good": self.trigger_good,
+            "trigger_easy": self.trigger_easy,
+            "preset": self.preset,
+            "colors": list(self.colors),
+            "intensity": self.intensity,
+            "duration_ms": self.duration_ms,
+            "delay_ms": self.delay_ms,
+            "origin_mode": self.origin_mode,
+            "custom_origin_x": self.custom_origin_x,
+            "custom_origin_y": self.custom_origin_y,
+            "shape": self.shape,
+            "spread": self.spread,
+            "respect_reduced_motion": self.respect_reduced_motion,
+            "use_worker": self.use_worker,
         }
 
 
@@ -184,10 +208,15 @@ def _is_reviewer(context: object | None) -> bool:
 def _add_assets(web_content: WebContent, context: object | None) -> None:
     if not _is_reviewer(context):
         return
+    web_content.js.extend(_asset_urls())
+
+
+def _asset_urls() -> tuple[str, str]:
     package = mw.addonManager.addonFromModule(__name__)
     root = f"/_addons/{package}/web"
-    web_content.js.extend(
-        (f"{root}/canvas-confetti.browser.min.js", f"{root}/confetti.js")
+    return (
+        f"{root}/canvas-confetti.browser.min.js",
+        f"{root}/confetti.js",
     )
 
 
@@ -217,7 +246,14 @@ def _answered(reviewer: Any, _card: Any, ease: int) -> None:
         _fire(webview, payload)
 
 
+def _open_settings() -> None:
+    from .settings import ConfettiSettingsDialog
+
+    ConfettiSettingsDialog(mw).exec()
+
+
 mw.addonManager.setWebExports(__name__, r"web/.*\.js")
+mw.addonManager.setConfigAction(__name__, _open_settings)
 mw.addonManager.setConfigUpdatedAction(__name__, _update_settings)
 gui_hooks.webview_will_set_content.append(_add_assets)
 gui_hooks.reviewer_did_answer_card.append(_answered)

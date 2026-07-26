@@ -31,7 +31,14 @@ Restart Anki after installing or updating the Python code.
 ## Configure
 
 In Anki, open **Tools → Add-ons**, select **Tiramisu's Confetti Thing**, and
-choose **Config**. See the inline configuration help for every option.
+choose **Config**. A compact settings window provides:
+
+- Live embedded previews for Good and Again.
+- Trigger, preset, origin, shape, color, intensity, and spread controls.
+- Fireworks duration, review delay, reduced-motion, and worker options.
+
+Preview buttons use the current controls immediately, without saving first.
+Choose **Save** once the effect looks right.
 
 Available presets are `button_cannon`, `simple_burst`, `realistic_burst`,
 `fireworks`, `stars`, and `side_cannons`.
@@ -52,6 +59,7 @@ An optional Windows integration check uses Anki's bundled Qt WebEngine:
 $env:QT_QPA_PLATFORM = "offscreen"
 $env:QTWEBENGINE_CHROMIUM_FLAGS = "--disable-gpu"
 & "$env:LOCALAPPDATA\AnkiProgramFiles\.venv\Scripts\python.exe" tests/qt_webengine_smoke.py
+& "$env:LOCALAPPDATA\AnkiProgramFiles\.venv\Scripts\python.exe" tests/qt_settings_smoke.py
 ```
 
 Third-party licensing is recorded in

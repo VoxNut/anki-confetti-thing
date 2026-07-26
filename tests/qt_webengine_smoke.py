@@ -78,6 +78,7 @@ def loaded(ok: bool) -> None:
           duration: 800,
           originMode: "center",
           shape: "squares",
+          spread: 180,
           reducedMotion: false,
           worker: true
         })"""

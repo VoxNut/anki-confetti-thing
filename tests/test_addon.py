@@ -18,6 +18,7 @@ class AddonManager:
     def __init__(self) -> None:
         self.config = {}
         self.exports = None
+        self.config_action = None
         self.updated_action = None
         self.get_config_calls = 0
 
@@ -30,6 +31,9 @@ class AddonManager:
 
     def setWebExports(self, module, pattern):
         self.exports = (module, pattern)
+
+    def setConfigAction(self, module, action):
+        self.config_action = (module, action)
 
     def setConfigUpdatedAction(self, module, action):
         self.updated_action = (module, action)
@@ -92,6 +96,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.intensity, 100)
         self.assertEqual(settings.origin_mode, "center")
         self.assertEqual(settings.shape, "squares")
+        self.assertEqual(settings.spread, 100)
         self.assertFalse(settings.respect_reduced_motion)
 
     def test_invalid_values_are_normalized_and_bounded(self):
@@ -105,6 +110,7 @@ class SettingsTests(unittest.TestCase):
                 "delay_ms": "bad",
                 "origin_mode": "unknown",
                 "shape": "triangles",
+                "spread": 999,
             }
         )
         self.assertFalse(settings.enabled)
@@ -115,6 +121,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.delay_ms, 80)
         self.assertEqual(settings.origin_mode, "center")
         self.assertEqual(settings.shape, "squares")
+        self.assertEqual(settings.spread, 360)
 
     def test_legacy_palette_and_option_names_are_migrated(self):
         settings = addon.Settings.from_mapping(
@@ -127,6 +134,7 @@ class SettingsTests(unittest.TestCase):
                 "delay_ms": 500,
                 "origin_mode": "center",
                 "shape": "squares",
+                "spread": 146,
             }
         )
         self.assertEqual(settings.colors, addon.PALETTES["pastel"])
@@ -134,6 +142,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.delay_ms, 0)
         self.assertEqual(settings.origin_mode, "center")
         self.assertEqual(settings.shape, "squares")
+        self.assertEqual(settings.spread, 146)
 
     def test_payload_contains_rendering_choices(self):
         settings = addon.Settings.from_mapping(
@@ -142,12 +151,31 @@ class SettingsTests(unittest.TestCase):
                 "custom_origin_x": 25,
                 "custom_origin_y": 75,
                 "shape": "circles",
+                "spread": 180,
             }
         )
         payload = settings.payload(addon.GOOD)
         self.assertEqual(payload["originMode"], "custom")
         self.assertEqual(payload["customOrigin"], {"x": 0.25, "y": 0.75})
         self.assertEqual(payload["shape"], "circles")
+        self.assertEqual(payload["spread"], 180)
+
+    def test_canonical_config_drops_legacy_bloat(self):
+        settings = addon.Settings.from_mapping(
+            {
+                "palette": "pastel",
+                "particle_multiplier": 141,
+                "trigger_delay_ms": 0,
+                "spread": 180,
+            }
+        )
+        config = settings.to_mapping()
+        self.assertEqual(config["colors"], list(addon.PALETTES["pastel"]))
+        self.assertEqual(config["intensity"], 141)
+        self.assertEqual(config["delay_ms"], 0)
+        self.assertEqual(config["spread"], 180)
+        self.assertNotIn("palette", config)
+        self.assertNotIn("particle_multiplier", config)
 
 
 class IntegrationTests(unittest.TestCase):
@@ -210,6 +238,7 @@ class IntegrationTests(unittest.TestCase):
         self.assertIn(addon._add_assets, hooks.webview_will_set_content)
         self.assertIn(addon._answered, hooks.reviewer_did_answer_card)
         self.assertEqual(manager.exports[1], r"web/.*\.js")
+        self.assertIs(manager.config_action[1], addon._open_settings)
         self.assertIs(manager.updated_action[1], addon._update_settings)
 
 

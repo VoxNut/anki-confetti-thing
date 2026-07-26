@@ -1,6 +1,6 @@
 ## Tiramisu's Confetti Thing
 
-Edit these values in Anki's add-on Config window.
+Use Anki's add-on Config window for a live UI. Its underlying fields are:
 
 - `enabled`: master switch.
 - `trigger_again`, `trigger_hard`, `trigger_good`, and `trigger_easy`: answers
@@ -18,6 +18,7 @@ Edit these values in Anki's add-on Config window.
   origin.
 - `shape`: `squares`, `circles`, `mixed`, `stars`, or `preset`. The first four
   override a preset's normal shapes; `preset` uses its built-in shapes.
+- `spread`: launch width in degrees, from 10 to 360. Try 180 for a wide burst.
 - `respect_reduced_motion`: honor Windows' reduced-motion preference. This is
   off by default because Windows may report reduced motion even when you
   explicitly want this effect.

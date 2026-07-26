@@ -12,6 +12,12 @@ Edit these values in Anki's add-on Config window.
 - `duration_ms`: fireworks duration from 400 to 4000 milliseconds.
 - `delay_ms`: delay after answering, from 0 to 500 milliseconds. A short delay
   lets Anki finish drawing the next card first.
+- `origin_mode`: `center`, `answer_button`, `top`, `bottom`, `left`, `right`,
+  or `custom`. Single-origin presets launch from this point.
+- `custom_origin_x` / `custom_origin_y`: percentages used by the `custom`
+  origin.
+- `shape`: `squares`, `circles`, `mixed`, `stars`, or `preset`. The first four
+  override a preset's normal shapes; `preset` uses its built-in shapes.
 - `respect_reduced_motion`: honor Windows' reduced-motion preference. This is
   off by default because Windows may report reduced motion even when you
   explicitly want this effect.
@@ -20,3 +26,6 @@ Edit these values in Anki's add-on Config window.
 Invalid values safely fall back to defaults. Changes take effect on the next
 answer without restarting Anki. Settings are cached between changes, so
 answering a card does not read configuration files from disk.
+
+`Again` always uses a centered thumbs-down emoji burst, independently of the
+normal confetti shape and origin.

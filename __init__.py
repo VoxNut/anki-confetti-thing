@@ -25,6 +25,10 @@ PRESETS = frozenset(
         "side_cannons",
     }
 )
+ORIGINS = frozenset(
+    {"answer_button", "center", "top", "bottom", "left", "right", "custom"}
+)
+SHAPES = frozenset({"preset", "mixed", "squares", "circles", "stars"})
 PALETTES = {
     "tiramisu": ("#f6bd60", "#f7ede2", "#f5cac3", "#84a59d", "#8d5524"),
     "anki": ("#2f7de1", "#45b7d1", "#ffffff", "#ffcd56", "#4bc0c0"),
@@ -55,14 +59,15 @@ def _integer(value: Any, default: int, minimum: int, maximum: int) -> int:
 
 
 def _colors(config: Mapping[str, Any]) -> tuple[str, ...]:
-    value = config.get("colors")
-    if value is None:
+    if "palette" in config:
         palette = str(config.get("palette", "tiramisu"))
         value = (
             config.get("custom_colors")
             if palette == "custom"
             else PALETTES.get(palette, DEFAULT_COLORS)
         )
+    else:
+        value = config.get("colors")
     if not isinstance(value, (list, tuple)):
         return DEFAULT_COLORS
     valid = tuple(str(color).lower() for color in value if HEX_COLOR(str(color)))
@@ -81,6 +86,10 @@ class Settings:
     intensity: int
     duration_ms: int
     delay_ms: int
+    origin_mode: str
+    custom_origin_x: int
+    custom_origin_y: int
+    shape: str
     respect_reduced_motion: bool
     use_worker: bool
 
@@ -93,6 +102,12 @@ class Settings:
         preset = str(config.get("preset", "button_cannon"))
         if preset not in PRESETS:
             preset = "button_cannon"
+        origin_mode = str(config.get("origin_mode", "center"))
+        if origin_mode not in ORIGINS:
+            origin_mode = "center"
+        shape = str(config.get("shape", "squares"))
+        if shape not in SHAPES:
+            shape = "squares"
         return cls(
             enabled=_boolean(config.get("enabled"), True),
             trigger_again=_boolean(config.get("trigger_again"), True),
@@ -102,18 +117,22 @@ class Settings:
             preset=preset,
             colors=_colors(config),
             intensity=_integer(
-                config.get("intensity", config.get("particle_multiplier")),
+                config.get("particle_multiplier", config.get("intensity")),
                 100,
                 25,
                 200,
             ),
             duration_ms=_integer(config.get("duration_ms"), 1600, 400, 4000),
             delay_ms=_integer(
-                config.get("delay_ms", config.get("trigger_delay_ms")),
+                config.get("trigger_delay_ms", config.get("delay_ms")),
                 80,
                 0,
                 500,
             ),
+            origin_mode=origin_mode,
+            custom_origin_x=_integer(config.get("custom_origin_x"), 50, 0, 100),
+            custom_origin_y=_integer(config.get("custom_origin_y"), 50, 0, 100),
+            shape=shape,
             respect_reduced_motion=_boolean(
                 config.get("respect_reduced_motion"), False
             ),
@@ -135,6 +154,12 @@ class Settings:
             "colors": self.colors,
             "intensity": self.intensity,
             "duration": self.duration_ms,
+            "originMode": self.origin_mode,
+            "customOrigin": {
+                "x": self.custom_origin_x / 100,
+                "y": self.custom_origin_y / 100,
+            },
+            "shape": self.shape,
             "reducedMotion": self.respect_reduced_motion,
             "worker": self.use_worker,
         }

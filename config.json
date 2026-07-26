@@ -15,6 +15,10 @@
   "intensity": 100,
   "duration_ms": 1600,
   "delay_ms": 80,
+  "origin_mode": "center",
+  "custom_origin_x": 50,
+  "custom_origin_y": 50,
+  "shape": "squares",
   "respect_reduced_motion": false,
   "use_worker": true
 }

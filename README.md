@@ -10,6 +10,8 @@ answers with confetti. Each answer can be enabled or disabled independently.
 - Rendering uses a web worker when Qt WebEngine supports it.
 - A new answer cancels unfinished effects, preventing stacked animations.
 - Particle counts and animation duration are bounded.
+- Origin and shape choices apply consistently across single-origin celebration
+  presets; Again has its own centered thumbs-down effect.
 - There are no background polls, event listeners, cross-webview messages, or
   custom settings windows.
 - Windows/browser reduced-motion preferences can optionally be respected.

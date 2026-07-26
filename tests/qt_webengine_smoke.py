@@ -71,11 +71,13 @@ def loaded(ok: bool) -> None:
         return
     view.page().runJavaScript(
         """window.ankiConfetti.fire({
-          ease: 3,
+          ease: 1,
           preset: "stars",
           colors: ["#ffffff", "#ff0000"],
           intensity: 100,
           duration: 800,
+          originMode: "center",
+          shape: "squares",
           reducedMotion: false,
           worker: true
         })"""

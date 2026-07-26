@@ -90,6 +90,8 @@ class SettingsTests(unittest.TestCase):
         self.assertFalse(settings.matches(addon.HARD))
         self.assertEqual(settings.preset, "button_cannon")
         self.assertEqual(settings.intensity, 100)
+        self.assertEqual(settings.origin_mode, "center")
+        self.assertEqual(settings.shape, "squares")
         self.assertFalse(settings.respect_reduced_motion)
 
     def test_invalid_values_are_normalized_and_bounded(self):
@@ -101,6 +103,8 @@ class SettingsTests(unittest.TestCase):
                 "intensity": 999,
                 "duration_ms": -1,
                 "delay_ms": "bad",
+                "origin_mode": "unknown",
+                "shape": "triangles",
             }
         )
         self.assertFalse(settings.enabled)
@@ -109,18 +113,41 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.intensity, 200)
         self.assertEqual(settings.duration_ms, 400)
         self.assertEqual(settings.delay_ms, 80)
+        self.assertEqual(settings.origin_mode, "center")
+        self.assertEqual(settings.shape, "squares")
 
     def test_legacy_palette_and_option_names_are_migrated(self):
         settings = addon.Settings.from_mapping(
             {
                 "palette": "pastel",
+                "colors": ["#000000"],
                 "particle_multiplier": 141,
+                "intensity": 25,
                 "trigger_delay_ms": 0,
+                "delay_ms": 500,
+                "origin_mode": "center",
+                "shape": "squares",
             }
         )
         self.assertEqual(settings.colors, addon.PALETTES["pastel"])
         self.assertEqual(settings.intensity, 141)
         self.assertEqual(settings.delay_ms, 0)
+        self.assertEqual(settings.origin_mode, "center")
+        self.assertEqual(settings.shape, "squares")
+
+    def test_payload_contains_rendering_choices(self):
+        settings = addon.Settings.from_mapping(
+            {
+                "origin_mode": "custom",
+                "custom_origin_x": 25,
+                "custom_origin_y": 75,
+                "shape": "circles",
+            }
+        )
+        payload = settings.payload(addon.GOOD)
+        self.assertEqual(payload["originMode"], "custom")
+        self.assertEqual(payload["customOrigin"], {"x": 0.25, "y": 0.75})
+        self.assertEqual(payload["shape"], "circles")
 
 
 class IntegrationTests(unittest.TestCase):

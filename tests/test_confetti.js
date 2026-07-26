@@ -22,6 +22,10 @@ global.document = {
   },
 };
 global.confetti = function () {};
+global.confetti.shapeFromText = (options) => ({
+  type: "emoji",
+  text: options.text,
+});
 global.confetti.create = () => {
   const fire = (options) => launches.push(options);
   fire.reset = () => {
@@ -36,6 +40,8 @@ const base = {
   ease: 3,
   colors: ["#ffffff"],
   intensity: 100,
+  originMode: "center",
+  shape: "squares",
   reducedMotion: true,
   worker: true,
 };
@@ -49,9 +55,12 @@ assert.equal(resetCount, 2, "the previous animation should be cancelled");
 assert.equal(launches.length, 4, "two cannons and two star layers should launch");
 assert.equal(launches[0].disableForReducedMotion, true);
 assert.equal(launches[0].particleCount, 72);
-assert.equal(launches[1].shapes[0], "star");
-assert.deepEqual(launches[3].origin, { x: 0.18, y: 0.88 });
-assert.equal(launches[3].angle, 58);
+assert.deepEqual(launches[0].origin, { x: 0.5, y: 0.5 });
+assert.deepEqual(launches[0].shapes, ["square"]);
+assert.deepEqual(launches[1].shapes, ["square"]);
+assert.deepEqual(launches[2].shapes, ["square"]);
+assert.deepEqual(launches[3].origin, { x: 0.5, y: 0.5 });
+assert.equal(launches[3].shapes[0].text, "👎");
 
 window.ankiConfetti.stop();
 assert.equal(resetCount, 3);

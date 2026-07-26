@@ -42,15 +42,18 @@ const base = {
 
 window.ankiConfetti.fire({ ...base, preset: "button_cannon" });
 window.ankiConfetti.fire({ ...base, preset: "stars" });
+window.ankiConfetti.fire({ ...base, ease: 1, preset: "button_cannon" });
 
 assert.equal(canvasCount, 1, "the same canvas should be reused");
-assert.equal(resetCount, 1, "the previous animation should be cancelled");
-assert.equal(launches.length, 3, "one cannon and two star layers should launch");
+assert.equal(resetCount, 2, "the previous animation should be cancelled");
+assert.equal(launches.length, 4, "two cannons and two star layers should launch");
 assert.equal(launches[0].disableForReducedMotion, true);
 assert.equal(launches[0].particleCount, 72);
 assert.equal(launches[1].shapes[0], "star");
+assert.deepEqual(launches[3].origin, { x: 0.18, y: 0.88 });
+assert.equal(launches[3].angle, 58);
 
 window.ankiConfetti.stop();
-assert.equal(resetCount, 2);
+assert.equal(resetCount, 3);
 
 console.log("confetti runtime smoke test passed");

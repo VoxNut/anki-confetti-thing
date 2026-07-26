@@ -11,6 +11,8 @@ from aqt import gui_hooks, mw
 from aqt.qt import QTimer
 from aqt.webview import WebContent
 
+AGAIN = 1
+HARD = 2
 GOOD = 3
 EASY = 4
 PRESETS = frozenset(
@@ -70,6 +72,8 @@ def _colors(config: Mapping[str, Any]) -> tuple[str, ...]:
 @dataclass(frozen=True, slots=True)
 class Settings:
     enabled: bool
+    trigger_again: bool
+    trigger_hard: bool
     trigger_good: bool
     trigger_easy: bool
     preset: str
@@ -91,6 +95,8 @@ class Settings:
             preset = "button_cannon"
         return cls(
             enabled=_boolean(config.get("enabled"), True),
+            trigger_again=_boolean(config.get("trigger_again"), True),
+            trigger_hard=_boolean(config.get("trigger_hard"), False),
             trigger_good=_boolean(config.get("trigger_good"), True),
             trigger_easy=_boolean(config.get("trigger_easy"), True),
             preset=preset,
@@ -109,14 +115,16 @@ class Settings:
                 500,
             ),
             respect_reduced_motion=_boolean(
-                config.get("respect_reduced_motion"), True
+                config.get("respect_reduced_motion"), False
             ),
             use_worker=_boolean(config.get("use_worker"), True),
         )
 
     def matches(self, ease: int) -> bool:
         return self.enabled and (
-            (ease == GOOD and self.trigger_good)
+            (ease == AGAIN and self.trigger_again)
+            or (ease == HARD and self.trigger_hard)
+            or (ease == GOOD and self.trigger_good)
             or (ease == EASY and self.trigger_easy)
         )
 
@@ -130,6 +138,15 @@ class Settings:
             "reducedMotion": self.respect_reduced_motion,
             "worker": self.use_worker,
         }
+
+
+_settings = Settings.load()
+
+
+def _update_settings(config: Any) -> None:
+    global _settings
+    if isinstance(config, Mapping):
+        _settings = Settings.from_mapping(config)
 
 
 def _is_reviewer(context: object | None) -> bool:
@@ -159,7 +176,7 @@ def _fire(webview: Any, payload: Mapping[str, Any]) -> None:
 
 
 def _answered(reviewer: Any, _card: Any, ease: int) -> None:
-    settings = Settings.load()
+    settings = _settings
     if not settings.matches(ease):
         return
     webview = getattr(reviewer, "web", None)
@@ -176,5 +193,6 @@ def _answered(reviewer: Any, _card: Any, ease: int) -> None:
 
 
 mw.addonManager.setWebExports(__name__, r"web/.*\.js")
+mw.addonManager.setConfigUpdatedAction(__name__, _update_settings)
 gui_hooks.webview_will_set_content.append(_add_assets)
 gui_hooks.reviewer_did_answer_card.append(_answered)

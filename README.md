@@ -1,7 +1,7 @@
 # Tiramisu's Confetti Thing
 
-A small, offline Anki add-on that celebrates `Good` and `Easy` answers with
-confetti.
+A small, offline Anki add-on that celebrates `Again`, `Good`, and `Easy`
+answers with confetti. Each answer can be enabled or disabled independently.
 
 ## Why this rewrite is lean
 
@@ -12,7 +12,7 @@ confetti.
 - Particle counts and animation duration are bounded.
 - There are no background polls, event listeners, cross-webview messages, or
   custom settings windows.
-- Windows/browser reduced-motion preferences are respected by default.
+- Windows/browser reduced-motion preferences can optionally be respected.
 
 The runtime is one small Python integration module, one small JavaScript
 controller, and the vendored
@@ -42,6 +42,14 @@ Run the checks from this directory:
 python -m unittest discover -s tests -v
 node --check web/confetti.js
 node tests/test_confetti.js
+```
+
+An optional Windows integration check uses Anki's bundled Qt WebEngine:
+
+```powershell
+$env:QT_QPA_PLATFORM = "offscreen"
+$env:QTWEBENGINE_CHROMIUM_FLAGS = "--disable-gpu"
+& "$env:LOCALAPPDATA\AnkiProgramFiles\.venv\Scripts\python.exe" tests/qt_webengine_smoke.py
 ```
 
 Third-party licensing is recorded in

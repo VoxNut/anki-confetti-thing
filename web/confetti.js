@@ -46,7 +46,11 @@
   }
 
   function origin(ease) {
-    return ease === 4 ? { x: 0.82, y: 0.88 } : { x: 0.62, y: 0.88 };
+    return { x: [0, 0.18, 0.38, 0.62, 0.82][ease] || 0.5, y: 0.88 };
+  }
+
+  function angle(ease) {
+    return [90, 58, 72, 108, 122][ease] || 90;
   }
 
   function burst(fire, payload, pieces, options = {}) {
@@ -60,7 +64,7 @@
   const presets = {
     button_cannon(fire, payload) {
       burst(fire, payload, 72, {
-        angle: payload.ease === 4 ? 122 : 82,
+        angle: angle(payload.ease),
         spread: 58,
         startVelocity: 46,
         gravity: 0.9,

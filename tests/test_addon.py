@@ -18,8 +18,11 @@ class AddonManager:
     def __init__(self) -> None:
         self.config = {}
         self.exports = None
+        self.updated_action = None
+        self.get_config_calls = 0
 
     def getConfig(self, _module):
+        self.get_config_calls += 1
         return self.config
 
     def addonFromModule(self, _module):
@@ -27,6 +30,9 @@ class AddonManager:
 
     def setWebExports(self, module, pattern):
         self.exports = (module, pattern)
+
+    def setConfigUpdatedAction(self, module, action):
+        self.updated_action = (module, action)
 
 
 class Timer:
@@ -79,9 +85,12 @@ addon, manager, hooks = load_addon()
 class SettingsTests(unittest.TestCase):
     def test_defaults_are_safe(self):
         settings = addon.Settings.from_mapping({})
+        self.assertTrue(settings.matches(addon.AGAIN))
         self.assertTrue(settings.matches(addon.GOOD))
+        self.assertFalse(settings.matches(addon.HARD))
         self.assertEqual(settings.preset, "button_cannon")
         self.assertEqual(settings.intensity, 100)
+        self.assertFalse(settings.respect_reduced_motion)
 
     def test_invalid_values_are_normalized_and_bounded(self):
         settings = addon.Settings.from_mapping(
@@ -117,6 +126,7 @@ class SettingsTests(unittest.TestCase):
 class IntegrationTests(unittest.TestCase):
     def setUp(self):
         manager.config = {}
+        addon._update_settings(manager.config)
         Timer.calls.clear()
 
     def test_only_reviewer_receives_assets(self):
@@ -144,16 +154,36 @@ class IntegrationTests(unittest.TestCase):
         self.assertIn("window.ankiConfetti?.fire(", web.scripts[0])
         self.assertNotIn(" ", web.scripts[0])
 
-    def test_again_answer_does_nothing(self):
+    def test_again_answer_triggers_by_default(self):
         web = WebView()
-        addon._answered(types.SimpleNamespace(web=web), object(), 1)
+        addon._answered(types.SimpleNamespace(web=web), object(), addon.AGAIN)
+        self.assertEqual(Timer.calls, [80])
+        self.assertEqual(len(web.scripts), 1)
+
+    def test_hard_answer_does_nothing_by_default(self):
+        web = WebView()
+        addon._answered(types.SimpleNamespace(web=web), object(), addon.HARD)
         self.assertEqual(Timer.calls, [])
         self.assertEqual(web.scripts, [])
+
+    def test_saved_config_refreshes_cached_settings(self):
+        manager.updated_action[1]({"trigger_good": False})
+        web = WebView()
+        addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
+        self.assertEqual(web.scripts, [])
+
+    def test_answering_does_not_reread_config_files(self):
+        calls = manager.get_config_calls
+        web = WebView()
+        addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
+        addon._answered(types.SimpleNamespace(web=web), object(), addon.AGAIN)
+        self.assertEqual(manager.get_config_calls, calls)
 
     def test_hooks_and_exports_are_registered(self):
         self.assertIn(addon._add_assets, hooks.webview_will_set_content)
         self.assertIn(addon._answered, hooks.reviewer_did_answer_card)
         self.assertEqual(manager.exports[1], r"web/.*\.js")
+        self.assertIs(manager.updated_action[1], addon._update_settings)
 
 
 if __name__ == "__main__":

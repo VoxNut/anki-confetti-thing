@@ -1,5 +1,7 @@
 {
   "enabled": true,
+  "trigger_again": true,
+  "trigger_hard": false,
   "trigger_good": true,
   "trigger_easy": true,
   "preset": "button_cannon",
@@ -13,6 +15,6 @@
   "intensity": 100,
   "duration_ms": 1600,
   "delay_ms": 80,
-  "respect_reduced_motion": true,
+  "respect_reduced_motion": false,
   "use_worker": true
 }

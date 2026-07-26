@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  if (window.ankiConfetti?.version === 2) return;
+  if (window.ankiConfetti?.version === 3) return;
 
   const state = {
     cannon: null,
@@ -57,7 +57,10 @@
       case "stars":
         return ["star"];
       case "emoji": {
-        const shape = textShape(payload.emoji || "🎉");
+        const shape = textShape(
+          payload.emoji || "🎉",
+          emojiScalar(payload)
+        );
         return shape ? [shape] : ["circle"];
       }
       case "preset":
@@ -78,12 +81,17 @@
     return options;
   }
 
-  function textShape(text) {
-    if (state.textShapes.has(text)) return state.textShapes.get(text);
+  function emojiScalar(payload) {
+    return clamp(payload.emojiSize || 160, 50, 300) / 100;
+  }
+
+  function textShape(text, scalar) {
+    const key = `${text}\u0000${scalar}`;
+    if (state.textShapes.has(key)) return state.textShapes.get(key);
     if (typeof window.confetti.shapeFromText !== "function") return null;
     try {
-      const shape = window.confetti.shapeFromText({ text, scalar: 1.6 });
-      state.textShapes.set(text, shape);
+      const shape = window.confetti.shapeFromText({ text, scalar });
+      state.textShapes.set(key, shape);
       return shape;
     } catch (_error) {
       return null;
@@ -116,22 +124,25 @@
     }
   }
 
-  function angle(ease) {
-    return [90, 58, 72, 108, 122][ease] || 90;
+  function angle(payload) {
+    if (payload.originMode !== "answer_button") return 90;
+    return [90, 58, 72, 108, 122][payload.ease] || 90;
   }
 
   function burst(fire, payload, pieces, options = {}, presetShapes) {
-    fire({
+    const launch = {
       ...defaults(payload, presetShapes),
       ...options,
       particleCount: count(pieces, payload.intensity),
-    });
+    };
+    if (payload.shape === "emoji") launch.scalar = emojiScalar(payload);
+    fire(launch);
   }
 
   const presets = {
     button_cannon(fire, payload) {
       burst(fire, payload, 72, {
-        angle: angle(payload.ease),
+        angle: angle(payload),
         spread: spread(payload, 58),
         startVelocity: 46,
         gravity: 0.9,
@@ -159,7 +170,14 @@
         [0.35, { spread: configuredSpread, decay: 0.91, scalar: 0.8 }],
         [0.2, { spread: configuredSpread, startVelocity: 28, scalar: 1.1 }],
       ].forEach(([ratio, options]) =>
-        fire({ ...shared, ...options, particleCount: Math.round(total * ratio) })
+        fire({
+          ...shared,
+          ...options,
+          ...(payload.shape === "emoji"
+            ? { scalar: emojiScalar(payload) }
+            : {}),
+          particleCount: Math.round(total * ratio),
+        })
       );
     },
 
@@ -206,33 +224,29 @@
         spread: spread(payload, 55),
         startVelocity: 42,
       };
+      if (payload.shape === "emoji") shared.scalar = emojiScalar(payload);
       fire({ ...shared, angle: 60, origin: { x: 0, y: 0.86 } });
       fire({ ...shared, angle: 120, origin: { x: 1, y: 0.86 } });
     },
   };
 
-  function launchAgain(fire, payload) {
-    const shape = textShape(payload.againEmoji || "👎");
-    burst(fire, payload, 28, {
-      spread: spread(payload, 100),
-      startVelocity: 24,
-      gravity: 1.05,
-      scalar: 1.6,
-      shapes: shape ? [shape] : ["square"],
-      origin: { x: 0.5, y: 0.5 },
-    });
-  }
-
   function fire(payload = {}) {
     if (typeof window.confetti?.create !== "function") return;
     stop();
     const launch = cannon(payload.worker !== false);
-    if (payload.ease === 1) {
-      launchAgain(launch, payload);
-    } else {
-      (presets[payload.preset] || presets.button_cannon)(launch, payload);
-    }
+    const effectivePayload =
+      payload.ease === 1
+        ? {
+            ...payload,
+            shape: "emoji",
+            emoji: payload.againEmoji || "👎",
+          }
+        : payload;
+    (presets[effectivePayload.preset] || presets.button_cannon)(
+      launch,
+      effectivePayload
+    );
   }
 
-  window.ankiConfetti = { version: 2, fire, stop };
+  window.ankiConfetti = { version: 3, fire, stop };
 })();

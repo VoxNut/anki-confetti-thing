@@ -84,6 +84,7 @@ assert dialog.preview_good.isEnabled()
 assert not dialog.emoji.isEnabled()
 dialog.spread.setValue(220)
 dialog.again_emoji.setText("😭")
+dialog.emoji_size.setValue(230)
 dialog.shape.setCurrentIndex(dialog.shape.findData("emoji"))
 dialog.emoji.setText("✨")
 assert dialog.emoji.isEnabled()
@@ -93,12 +94,14 @@ assert '"shape":"emoji"' in dialog.preview.scripts[-1]
 assert '"emoji":"\\u2728"' in dialog.preview.scripts[-1]
 dialog.preview_again.click()
 assert '"againEmoji":"\\ud83d\\ude2d"' in dialog.preview.scripts[-1]
+assert '"emojiSize":230' in dialog.preview.scripts[-1]
 
 button_box = dialog.findChild(QDialogButtonBox)
 button_box.button(QDialogButtonBox.StandardButton.Save).click()
 assert manager.written is not None
 assert manager.written[1]["spread"] == 220
 assert manager.written[1]["again_emoji"] == "😭"
+assert manager.written[1]["emoji_size"] == 230
 assert manager.written[1]["shape"] == "emoji"
 assert manager.written[1]["emoji"] == "✨"
 assert manager.written[1]["origin_mode"] == "center"

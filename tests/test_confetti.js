@@ -25,6 +25,7 @@ global.confetti = function () {};
 global.confetti.shapeFromText = (options) => ({
   type: "emoji",
   text: options.text,
+  scalar: options.scalar,
 });
 global.confetti.create = () => {
   const fire = (options) => launches.push(options);
@@ -44,6 +45,7 @@ const base = {
   shape: "squares",
   emoji: "✨",
   againEmoji: "😭",
+  emojiSize: 180,
   spread: 180,
   reducedMotion: true,
   worker: true,
@@ -59,6 +61,7 @@ assert.equal(launches.length, 4, "two cannons and two star layers should launch"
 assert.equal(launches[0].disableForReducedMotion, true);
 assert.equal(launches[0].particleCount, 72);
 assert.equal(launches[0].spread, 180);
+assert.equal(launches[0].angle, 90);
 assert.deepEqual(launches[0].origin, { x: 0.5, y: 0.5 });
 assert.deepEqual(launches[0].shapes, ["square"]);
 assert.deepEqual(launches[1].shapes, ["square"]);
@@ -66,6 +69,10 @@ assert.deepEqual(launches[2].shapes, ["square"]);
 assert.deepEqual(launches[3].origin, { x: 0.5, y: 0.5 });
 assert.equal(launches[3].shapes[0].text, "😭");
 assert.equal(launches[3].spread, 180);
+assert.equal(launches[3].particleCount, launches[0].particleCount);
+assert.equal(launches[3].angle, launches[0].angle);
+assert.equal(launches[3].scalar, 1.8);
+assert.equal(launches[3].shapes[0].scalar, 1.8);
 
 window.ankiConfetti.fire({
   ...base,
@@ -74,6 +81,7 @@ window.ankiConfetti.fire({
   shape: "emoji",
 });
 assert.equal(launches[4].shapes[0].text, "✨");
+assert.equal(launches[4].scalar, 1.8);
 
 window.ankiConfetti.stop();
 assert.equal(resetCount, 4);

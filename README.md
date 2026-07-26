@@ -10,10 +10,10 @@ answers with confetti. Each answer can be enabled or disabled independently.
 - Rendering uses a web worker when Qt WebEngine supports it.
 - A new answer cancels unfinished effects, preventing stacked animations.
 - Particle counts and animation duration are bounded.
-- Origin and shape choices apply consistently across single-origin celebration
-  presets. Normal confetti and Again can each use a configurable emoji.
-- There are no background polls, event listeners, cross-webview messages, or
-  custom settings windows.
+- Every answer uses the same selected preset and launch controls. Normal
+  confetti and Again can each use a configurable, resizable emoji.
+- There are no background polls, review-page event listeners, or cross-webview
+  messages. The settings UI is loaded only when opened.
 - Windows/browser reduced-motion preferences can optionally be respected.
 
 The runtime is one small Python integration module, one small JavaScript
@@ -34,7 +34,8 @@ In Anki, open **Tools → Add-ons**, select **Tiramisu's Confetti Thing**, and
 choose **Config**. A compact settings window provides:
 
 - Live embedded previews for Good and Again.
-- Trigger, preset, origin, shape, emoji, color, intensity, and spread controls.
+- Trigger, preset, origin, shape, emoji, emoji-size, color, intensity, and
+  spread controls.
 - Fireworks duration, review delay, reduced-motion, and worker options.
 
 Preview buttons use the current controls immediately, without saving first.

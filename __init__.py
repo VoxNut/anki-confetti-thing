@@ -98,6 +98,7 @@ class Settings:
     shape: str
     emoji: str
     again_emoji: str
+    emoji_size: int
     spread: int
     respect_reduced_motion: bool
     use_worker: bool
@@ -144,6 +145,7 @@ class Settings:
             shape=shape,
             emoji=_emoji(config.get("emoji"), "🎉"),
             again_emoji=_emoji(config.get("again_emoji"), "👎"),
+            emoji_size=_integer(config.get("emoji_size"), 160, 50, 300),
             spread=_integer(config.get("spread"), 100, 10, 360),
             respect_reduced_motion=_boolean(
                 config.get("respect_reduced_motion"), False
@@ -174,6 +176,7 @@ class Settings:
             "shape": self.shape,
             "emoji": self.emoji,
             "againEmoji": self.again_emoji,
+            "emojiSize": self.emoji_size,
             "spread": self.spread,
             "reducedMotion": self.respect_reduced_motion,
             "worker": self.use_worker,
@@ -197,6 +200,7 @@ class Settings:
             "shape": self.shape,
             "emoji": self.emoji,
             "again_emoji": self.again_emoji,
+            "emoji_size": self.emoji_size,
             "spread": self.spread,
             "respect_reduced_motion": self.respect_reduced_motion,
             "use_worker": self.use_worker,

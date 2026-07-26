@@ -19,6 +19,7 @@ Use Anki's add-on Config window for a live UI. Its underlying fields are:
 - `shape`: `squares`, `circles`, `mixed`, `stars`, `emoji`, or `preset`.
 - `emoji`: character used when `shape` is `emoji`.
 - `again_emoji`: character used by the special Again burst, such as `😭`.
+- `emoji_size`: emoji particle size from 50% to 300%.
 - `spread`: launch width in degrees, from 10 to 360. Try 180 for a wide burst.
 - `respect_reduced_motion`: honor Windows' reduced-motion preference. This is
   off by default because Windows may report reduced motion even when you
@@ -29,5 +30,5 @@ Invalid values safely fall back to defaults. Changes take effect on the next
 answer without restarting Anki. Settings are cached between changes, so
 answering a card does not read configuration files from disk.
 
-`Again` always uses its configured emoji in a centered burst, independently of
-the normal confetti shape and origin.
+`Again` uses its configured emoji with the same selected preset, origin,
+spread, and launch style as the other answers.

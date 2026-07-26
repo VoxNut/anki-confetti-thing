@@ -21,6 +21,7 @@
   "shape": "squares",
   "emoji": "🎉",
   "again_emoji": "👎",
+  "emoji_size": 160,
   "spread": 100,
   "respect_reduced_motion": false,
   "use_worker": true

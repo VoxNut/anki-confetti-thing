@@ -156,6 +156,13 @@ class ConfettiSettingsDialog(QDialog):
         )
         form.addRow("Again emoji", self.again_emoji)
 
+        self.emoji_size = _spin(self, 50, 300, current.emoji_size, "%")
+        self.emoji_size.setSingleStep(10)
+        self.emoji_size.setToolTip(
+            "Size of emoji particles for both normal and Again confetti."
+        )
+        form.addRow("Emoji size", self.emoji_size)
+
         self.colors = QLineEdit(", ".join(current.colors), self)
         self.colors.setPlaceholderText("#ff0000, #00ff00, #0000ff")
         form.addRow("Colors", self.colors)
@@ -265,6 +272,7 @@ class ConfettiSettingsDialog(QDialog):
                 "shape": self.shape.currentData(),
                 "emoji": self.emoji.text(),
                 "again_emoji": self.again_emoji.text(),
+                "emoji_size": self.emoji_size.value(),
                 "colors": [color.strip() for color in colors],
                 "intensity": self.intensity.value(),
                 "spread": self.spread.value(),

@@ -80,6 +80,7 @@ def loaded(ok: bool) -> None:
           shape: "squares",
           emoji: "✨",
           againEmoji: "😭",
+          emojiSize: 180,
           spread: 180,
           reducedMotion: false,
           worker: true

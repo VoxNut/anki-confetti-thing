@@ -98,6 +98,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.shape, "squares")
         self.assertEqual(settings.emoji, "🎉")
         self.assertEqual(settings.again_emoji, "👎")
+        self.assertEqual(settings.emoji_size, 160)
         self.assertEqual(settings.spread, 100)
         self.assertFalse(settings.respect_reduced_motion)
 
@@ -114,6 +115,7 @@ class SettingsTests(unittest.TestCase):
                 "shape": "triangles",
                 "emoji": "",
                 "again_emoji": 42,
+                "emoji_size": 999,
                 "spread": 999,
             }
         )
@@ -127,6 +129,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(settings.shape, "squares")
         self.assertEqual(settings.emoji, "🎉")
         self.assertEqual(settings.again_emoji, "👎")
+        self.assertEqual(settings.emoji_size, 300)
         self.assertEqual(settings.spread, 360)
 
     def test_legacy_palette_and_option_names_are_migrated(self):
@@ -159,6 +162,7 @@ class SettingsTests(unittest.TestCase):
                 "shape": "circles",
                 "emoji": "✨",
                 "again_emoji": "😭",
+                "emoji_size": 220,
                 "spread": 180,
             }
         )
@@ -168,6 +172,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(payload["shape"], "circles")
         self.assertEqual(payload["emoji"], "✨")
         self.assertEqual(payload["againEmoji"], "😭")
+        self.assertEqual(payload["emojiSize"], 220)
         self.assertEqual(payload["spread"], 180)
 
     def test_canonical_config_drops_legacy_bloat(self):
@@ -178,6 +183,7 @@ class SettingsTests(unittest.TestCase):
                 "trigger_delay_ms": 0,
                 "emoji": "✨",
                 "again_emoji": "😭",
+                "emoji_size": 220,
                 "spread": 180,
             }
         )
@@ -188,6 +194,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(config["spread"], 180)
         self.assertEqual(config["emoji"], "✨")
         self.assertEqual(config["again_emoji"], "😭")
+        self.assertEqual(config["emoji_size"], 220)
         self.assertNotIn("palette", config)
         self.assertNotIn("particle_multiplier", config)
 

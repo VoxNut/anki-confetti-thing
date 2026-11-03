@@ -17,12 +17,13 @@ from aqt.qt import (
     QPushButton,
     QSpinBox,
     QVBoxLayout,
+    Qt,
     QWidget,
 )
 from aqt.utils import qconnect, tooltip
-from aqt.webview import AnkiWebView
 
-from . import AGAIN, GOOD, Settings, _asset_urls, _fire, _update_settings
+from . import AGAIN, GOOD, Settings, _fire, _update_settings
+from .overlay import stop_confetti
 
 PRESET_LABELS = {
     "button_cannon": "Button cannon",
@@ -88,9 +89,10 @@ class ConfettiSettingsDialog(QDialog):
         intro.setWordWrap(True)
         root.addWidget(intro)
 
-        self.preview = AnkiWebView(self)
+        self.preview = QLabel("Live preview\nChoose a preview button below.", self)
+        self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.preview.setStyleSheet("background: #11151b; color: #e8eaed; border-radius: 6px;")
         self.preview.setMinimumHeight(280)
-        self.preview.requiresCol = False
         root.addWidget(self.preview, 1)
 
         form = QFormLayout()
@@ -189,18 +191,13 @@ class ConfettiSettingsDialog(QDialog):
         runtime = QHBoxLayout()
         self.reduced_motion = QCheckBox("Respect reduced motion", self)
         self.reduced_motion.setChecked(current.respect_reduced_motion)
-        self.worker = QCheckBox("Use rendering worker", self)
-        self.worker.setChecked(current.use_worker)
         runtime.addWidget(self.reduced_motion)
-        runtime.addWidget(self.worker)
         runtime.addStretch(1)
         form.addRow("Runtime", runtime)
 
         preview_buttons = QHBoxLayout()
         self.preview_again = QPushButton("Preview Again 👎", self)
         self.preview_good = QPushButton("Preview Good", self)
-        self.preview_again.setEnabled(False)
-        self.preview_good.setEnabled(False)
         qconnect(self.preview_again.clicked, lambda: self._preview(AGAIN))
         qconnect(self.preview_good.clicked, lambda: self._preview(GOOD))
         preview_buttons.addStretch(1)
@@ -217,36 +214,8 @@ class ConfettiSettingsDialog(QDialog):
         qconnect(buttons.rejected, self.close)
         root.addWidget(buttons)
 
-        qconnect(self.preview.loadFinished, self._preview_loaded)
-        self.preview.stdHtml(
-            """
-            <main>
-              <div>Live preview</div>
-              <small>Adjust settings below, then choose a preview button.</small>
-            </main>
-            """,
-            js=list(_asset_urls()),
-            head="""
-            <style>
-              html, body { height: 100%; margin: 0; overflow: hidden; }
-              body {
-                display: grid; place-items: center;
-                background: #11151b; color: #e8eaed;
-                font-family: system-ui, sans-serif;
-              }
-              main { text-align: center; font-size: 24px; }
-              small { color: #9aa0a6; font-size: 13px; }
-            </style>
-            """,
-            context=None,
-            default_css=False,
-        )
         self._refresh_origin_controls()
         self._refresh_shape_controls()
-
-    def _preview_loaded(self, ok: bool) -> None:
-        self.preview_again.setEnabled(ok)
-        self.preview_good.setEnabled(ok)
 
     def _refresh_origin_controls(self, *_args: Any) -> None:
         enabled = self.origin.currentData() == "custom"
@@ -279,7 +248,6 @@ class ConfettiSettingsDialog(QDialog):
                 "duration_ms": self.duration.value(),
                 "delay_ms": self.delay.value(),
                 "respect_reduced_motion": self.reduced_motion.isChecked(),
-                "use_worker": self.worker.isChecked(),
             }
         )
 
@@ -294,5 +262,5 @@ class ConfettiSettingsDialog(QDialog):
         tooltip("Confetti settings saved.", parent=self)
 
     def closeEvent(self, event: Any) -> None:
-        self.preview.cleanup()
+        stop_confetti(self.preview)
         super().closeEvent(event)

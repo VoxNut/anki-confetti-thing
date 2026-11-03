@@ -39,20 +39,6 @@ class AddonManager:
         self.updated_action = (module, action)
 
 
-class Timer:
-    calls = []
-
-    @classmethod
-    def singleShot(cls, delay, callback):
-        cls.calls.append(delay)
-        callback()
-
-
-class WebContent:
-    def __init__(self):
-        self.js = []
-
-
 class WebView:
     def __init__(self):
         self.scripts = []
@@ -72,11 +58,12 @@ def load_addon():
     aqt = types.ModuleType("aqt")
     aqt.gui_hooks = hooks
     aqt.mw = types.SimpleNamespace(addonManager=manager)
-    qt = types.ModuleType("aqt.qt")
-    qt.QTimer = Timer
-    webview = types.ModuleType("aqt.webview")
-    webview.WebContent = WebContent
-    sys.modules.update({"aqt": aqt, "aqt.qt": qt, "aqt.webview": webview})
+    native = types.ModuleType("confetti_addon.overlay")
+    native.calls = []
+    native.stopped = []
+    native.show_confetti = lambda parent, payload, delay: native.calls.append((parent, payload, delay))
+    native.stop_confetti = native.stopped.append
+    sys.modules.update({"aqt": aqt, "confetti_addon.overlay": native})
 
     spec = importlib.util.spec_from_file_location("confetti_addon", ROOT / "__init__.py")
     module = importlib.util.module_from_spec(spec)
@@ -205,65 +192,47 @@ class IntegrationTests(unittest.TestCase):
     def setUp(self):
         manager.config = {}
         addon._update_settings(manager.config)
-        Timer.calls.clear()
-        addon._pending_effect = None
+        self.native = sys.modules["confetti_addon.overlay"]
+        self.native.calls.clear()
+        self.native.stopped.clear()
         addon.mw.reviewer = None
 
-    def test_only_reviewer_receives_assets(self):
-        Reviewer = type("Reviewer", (), {})
-        Reviewer.__module__ = "aqt.reviewer"
-        content = WebContent()
-        addon._add_assets(content, Reviewer())
-        self.assertEqual(
-            content.js,
-            [
-                "/_addons/961932796/web/canvas-confetti.browser.min.js",
-                "/_addons/961932796/web/confetti.js",
-            ],
-        )
+    def test_no_scripts_injected_into_card(self):
+        self.assertEqual(hooks.webview_will_set_content, [])
+        self.assertIsNone(manager.exports)
 
-        other = WebContent()
-        addon._add_assets(other, object())
-        self.assertEqual(other.js, [])
-
-    def test_good_answer_schedules_compact_payload(self):
+    def test_good_answer_uses_native_overlay_with_saved_delay(self):
         web = WebView()
         addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
-        self.assertEqual(web.scripts, [], "do not launch while the next card is rendering")
-        addon._question_shown(object())
-        self.assertEqual(len(web.scripts), 1)
-        self.assertIn("window.ankiConfetti?.afterCard(", web.scripts[0])
-        self.assertIn('"delay":80', web.scripts[0])
-        self.assertNotIn(" ", web.scripts[0])
-        addon._question_shown(object())
-        self.assertEqual(len(web.scripts), 1, "one celebration per graded answer")
+        self.assertEqual(web.scripts, [])
+        self.assertEqual(len(self.native.calls), 1)
+        self.assertIs(self.native.calls[0][0], web)
+        self.assertEqual(self.native.calls[0][1]["ease"], addon.GOOD)
+        self.assertEqual(self.native.calls[0][2], 80)
 
     def test_again_answer_triggers_by_default(self):
         web = WebView()
         addon._answered(types.SimpleNamespace(web=web), object(), addon.AGAIN)
-        addon._question_shown(object())
-        self.assertEqual(len(web.scripts), 1)
+        self.assertEqual(self.native.calls[0][1]["ease"], addon.AGAIN)
 
-    def test_zero_delay_waits_for_next_question(self):
+    def test_zero_delay_does_not_wait_for_browser_queue(self):
         addon._update_settings({"delay_ms": 0})
         web = WebView()
         addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
         self.assertEqual(web.scripts, [])
-        addon._question_shown(object())
-        self.assertIn('"delay":0', web.scripts[0])
+        self.assertEqual(self.native.calls[0][2], 0)
 
-    def test_leaving_review_discards_pending_effect(self):
+    def test_leaving_review_stops_overlay(self):
         web = WebView()
         addon.mw.reviewer = types.SimpleNamespace(web=web)
         addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
         addon._review_ended()
-        addon._question_shown(object())
-        self.assertEqual(web.scripts, ["window.ankiConfetti?.stop()"])
+        self.assertEqual(self.native.stopped, [web])
 
     def test_hard_answer_does_nothing_by_default(self):
         web = WebView()
         addon._answered(types.SimpleNamespace(web=web), object(), addon.HARD)
-        self.assertEqual(Timer.calls, [])
+        self.assertEqual(self.native.calls, [])
         self.assertEqual(web.scripts, [])
 
     def test_saved_config_refreshes_cached_settings(self):
@@ -271,6 +240,7 @@ class IntegrationTests(unittest.TestCase):
         web = WebView()
         addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
         self.assertEqual(web.scripts, [])
+        self.assertEqual(self.native.calls, [])
 
     def test_answering_does_not_reread_config_files(self):
         calls = manager.get_config_calls
@@ -279,12 +249,10 @@ class IntegrationTests(unittest.TestCase):
         addon._answered(types.SimpleNamespace(web=web), object(), addon.AGAIN)
         self.assertEqual(manager.get_config_calls, calls)
 
-    def test_hooks_and_exports_are_registered(self):
-        self.assertIn(addon._add_assets, hooks.webview_will_set_content)
+    def test_hooks_and_settings_are_registered(self):
         self.assertIn(addon._answered, hooks.reviewer_did_answer_card)
-        self.assertIn(addon._question_shown, hooks.reviewer_did_show_question)
         self.assertIn(addon._review_ended, hooks.reviewer_will_end)
-        self.assertEqual(manager.exports[1], r"web/.*\.js")
+        self.assertEqual(hooks.reviewer_did_show_question, [])
         self.assertIs(manager.config_action[1], addon._open_settings)
         self.assertIs(manager.updated_action[1], addon._update_settings)
 

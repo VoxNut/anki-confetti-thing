@@ -10,8 +10,8 @@ Use Anki's add-on Config window for a live UI. Its underlying fields are:
 - `colors`: up to 12 CSS hex colors in `#rrggbb` form.
 - `intensity`: particle percentage from 25 to 200.
 - `duration_ms`: fireworks duration from 400 to 4000 milliseconds.
-- `delay_ms`: extra delay from 0 to 500 milliseconds after the next card has
-  finished rendering. Even at zero, confetti waits for the card's first paint.
+- `delay_ms`: delay from 0 to 500 milliseconds after grading. The native overlay
+  animates independently of the card's browser rendering.
 - `origin_mode`: `center`, `answer_button`, `top`, `bottom`, `left`, `right`,
   or `custom`. Single-origin presets launch from this point.
 - `custom_origin_x` / `custom_origin_y`: percentages used by the `custom`
@@ -24,7 +24,6 @@ Use Anki's add-on Config window for a live UI. Its underlying fields are:
 - `respect_reduced_motion`: honor Windows' reduced-motion preference. This is
   off by default because Windows may report reduced motion even when you
   explicitly want this effect.
-- `use_worker`: render through a web worker when supported.
 
 Invalid values safely fall back to defaults. Changes take effect on the next
 answer without restarting Anki. Settings are cached between changes, so

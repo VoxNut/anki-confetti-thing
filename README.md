@@ -3,25 +3,26 @@
 A small, offline Anki add-on that celebrates `Again`, `Good`, and `Easy`
 answers with confetti. Each answer can be enabled or disabled independently.
 
-## Why this rewrite is lean
+## Rendering
 
-- Only the reviewer receives the JavaScript assets.
-- One canvas is reused instead of allocating a canvas for every answer.
-- Rendering uses a web worker when Qt WebEngine supports it.
+- Confetti is painted in a native Qt overlay, outside the card's web renderer.
+  Card scripts, CSS, page replacement, and browser animation queues do not drive it.
+- One click-through overlay is reused. It follows the review surface when resized
+  and stops when reviewing ends or the surface is hidden.
+- Particle positions use elapsed time rather than frame counts. A missed timer
+  tick does not extend the animation or resume it from an outdated position.
 - A new answer cancels unfinished effects, preventing stacked animations.
-- Review celebrations wait for Anki's card scripts and first paint, so a heavy
-  note type does not interrupt the start of the animation. Previews stay immediate.
 - Particle counts and animation duration are bounded.
 - Every answer uses the same selected preset and launch controls. Normal
   confetti and Again can each use a configurable, resizable emoji.
-- There are no background polls, review-page event listeners, or cross-webview
-  messages. The settings UI is loaded only when opened.
-- Windows/browser reduced-motion preferences can optionally be respected.
+- There are no JavaScript assets, workers, browser canvases, background polls,
+  or cross-webview messages. The settings UI is loaded only when opened.
+- Windows reduced-motion preferences can optionally be respected.
 
-The runtime is one small Python integration module, one small JavaScript
-controller, and the vendored
-[`canvas-confetti`](https://github.com/catdad/canvas-confetti) library. Nothing
-is loaded from the network.
+The runtime uses Anki's bundled Qt and Python's standard library. No additional
+dependencies or network access are required. The settings preview uses the same
+native renderer as reviews. Version 1's `use_worker` setting is ignored on import
+and removed the next time settings are saved.
 
 ## Install
 
@@ -38,7 +39,7 @@ choose **Config**. A compact settings window provides:
 - Live embedded previews for Good and Again.
 - Trigger, preset, origin, shape, emoji, emoji-size, color, intensity, and
   spread controls.
-- Fireworks duration, review delay, reduced-motion, and worker options.
+- Fireworks duration, review delay, and reduced-motion options.
 
 Preview buttons use the current controls immediately, without saving first.
 Choose **Save** once the effect looks right.
@@ -52,8 +53,6 @@ Run the checks from this directory:
 
 ```powershell
 python -m unittest discover -s tests -v
-node --check web/confetti.js
-node tests/test_confetti.js
 ```
 
 An optional Windows integration check uses Anki's bundled Qt WebEngine:
@@ -61,9 +60,15 @@ An optional Windows integration check uses Anki's bundled Qt WebEngine:
 ```powershell
 $env:QT_QPA_PLATFORM = "offscreen"
 $env:QTWEBENGINE_CHROMIUM_FLAGS = "--disable-gpu"
-& "$env:LOCALAPPDATA\AnkiProgramFiles\.venv\Scripts\python.exe" tests/qt_webengine_smoke.py
+& "$env:LOCALAPPDATA\AnkiProgramFiles\.venv\Scripts\python.exe" tests/qt_overlay_smoke.py
 & "$env:LOCALAPPDATA\AnkiProgramFiles\.venv\Scripts\python.exe" tests/qt_settings_smoke.py
 ```
 
-Third-party licensing is recorded in
-[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+Set `PYTHONPATH` to Anki's `app_packages` directory if the bundled interpreter
+does not find PyQt6 automatically. `qt_overlay_smoke.py --senren` additionally
+loads a real Senren card through local AnkiConnect without changing review data.
+The test checks native animation during a one-second browser-script stall,
+resizing, every preset and shape, delay, reduced motion, and timer cleanup.
+
+The previous renderer's license is retained in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for the repository history.

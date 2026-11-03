@@ -6,15 +6,11 @@ import importlib
 import os
 import sys
 from pathlib import Path
-from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QApplication, QDialogButtonBox, QWidget
-
-import aqt
-import aqt.webview
+from qt_support import load_addon
 
 
 ROOT = Path(__file__).parents[1]
@@ -48,32 +44,9 @@ class AddonManager:
         self.written = (module, config)
 
 
-class Preview(QWidget):
-    loadFinished = pyqtSignal(bool)
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.requiresCol = True
-        self.scripts = []
-        self.cleaned = False
-
-    def stdHtml(self, *_args, **_kwargs):
-        self.loadFinished.emit(True)
-
-    def eval(self, script):
-        self.scripts.append(script)
-
-    def cleanup(self):
-        self.cleaned = True
-
-
 app = QApplication.instance() or QApplication(sys.argv)
 manager = AddonManager()
-aqt.mw = SimpleNamespace(addonManager=manager)
-aqt.webview.AnkiWebView = Preview
-sys.path.insert(0, str(ROOT.parent))
-
-addon = importlib.import_module(ROOT.name)
+addon = load_addon(manager)
 settings_module = importlib.import_module(f"{ROOT.name}.settings")
 settings_module.tooltip = lambda *_args, **_kwargs: None
 
@@ -89,12 +62,14 @@ dialog.shape.setCurrentIndex(dialog.shape.findData("emoji"))
 dialog.emoji.setText("✨")
 assert dialog.emoji.isEnabled()
 dialog.preview_good.click()
-assert '"spread":220' in dialog.preview.scripts[-1]
-assert '"shape":"emoji"' in dialog.preview.scripts[-1]
-assert '"emoji":"\\u2728"' in dialog.preview.scripts[-1]
+overlay = dialog.preview._confetti_overlay
+assert overlay.timer.isActive()
+assert all(p.shape == "emoji" for p in overlay.particles)
+assert overlay._emoji_key[0] == "✨"
 dialog.preview_again.click()
-assert '"againEmoji":"\\ud83d\\ude2d"' in dialog.preview.scripts[-1]
-assert '"emojiSize":230' in dialog.preview.scripts[-1]
+assert dialog.preview._confetti_overlay is overlay
+assert overlay._emoji_key[0] == "😭"
+assert abs(overlay.particles[0].size - 41.4) < .01
 
 button_box = dialog.findChild(QDialogButtonBox)
 button_box.button(QDialogButtonBox.StandardButton.Save).click()
@@ -108,5 +83,5 @@ assert manager.written[1]["origin_mode"] == "center"
 
 dialog.close()
 app.processEvents()
-assert dialog.preview.cleaned
+assert not overlay.timer.isActive()
 print("settings dialog smoke test passed")

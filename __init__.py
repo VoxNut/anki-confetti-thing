@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 
 from aqt import gui_hooks, mw
-from aqt.webview import WebContent
 
 AGAIN = 1
 HARD = 2
@@ -100,7 +98,6 @@ class Settings:
     emoji_size: int
     spread: int
     respect_reduced_motion: bool
-    use_worker: bool
 
     @classmethod
     def load(cls) -> "Settings":
@@ -149,7 +146,6 @@ class Settings:
             respect_reduced_motion=_boolean(
                 config.get("respect_reduced_motion"), False
             ),
-            use_worker=_boolean(config.get("use_worker"), True),
         )
 
     def matches(self, ease: int) -> bool:
@@ -178,7 +174,6 @@ class Settings:
             "emojiSize": self.emoji_size,
             "spread": self.spread,
             "reducedMotion": self.respect_reduced_motion,
-            "worker": self.use_worker,
         }
 
     def to_mapping(self) -> dict[str, Any]:
@@ -202,12 +197,10 @@ class Settings:
             "emoji_size": self.emoji_size,
             "spread": self.spread,
             "respect_reduced_motion": self.respect_reduced_motion,
-            "use_worker": self.use_worker,
         }
 
 
 _settings = Settings.load()
-_pending_effect: tuple[Any, dict[str, Any]] | None = None
 
 
 def _update_settings(config: Any) -> None:
@@ -216,66 +209,31 @@ def _update_settings(config: Any) -> None:
         _settings = Settings.from_mapping(config)
 
 
-def _is_reviewer(context: object | None) -> bool:
-    if context is None:
-        return False
-    kind = type(context)
-    return kind.__module__ == "aqt.reviewer" and kind.__name__ == "Reviewer"
-
-
-def _add_assets(web_content: WebContent, context: object | None) -> None:
-    if not _is_reviewer(context):
-        return
-    web_content.js.extend(_asset_urls())
-
-
-def _asset_urls() -> tuple[str, str]:
-    package = mw.addonManager.addonFromModule(__name__)
-    root = f"/_addons/{package}/web"
-    return (
-        f"{root}/canvas-confetti.browser.min.js",
-        f"{root}/confetti.js",
-    )
-
-
-def _fire(webview: Any, payload: Mapping[str, Any], *, after_card: bool = False) -> None:
+def _fire(parent: Any, payload: Mapping[str, Any], delay_ms: int = 0) -> None:
+    from .overlay import show_confetti
     try:
-        encoded = json.dumps(payload, separators=(",", ":"))
-        method = "afterCard" if after_card else "fire"
-        webview.eval(f"window.ankiConfetti?.{method}({encoded})")
+        show_confetti(parent, payload, delay_ms)
     except RuntimeError:
-        # The reviewer can be destroyed while a delayed callback is pending.
+        # Qt may already have destroyed the review surface during shutdown.
         pass
 
 
 def _answered(reviewer: Any, _card: Any, ease: int) -> None:
-    global _pending_effect
-    _pending_effect = None
     settings = _settings
     if not settings.matches(ease):
         return
     webview = getattr(reviewer, "web", None)
     if webview is None:
         return
-    payload = settings.payload(ease)
-    payload["delay"] = settings.delay_ms
-    _pending_effect = (webview, payload)
-
-
-def _question_shown(_card: Any) -> None:
-    global _pending_effect
-    pending, _pending_effect = _pending_effect, None
-    if pending is not None:
-        _fire(*pending, after_card=True)
+    _fire(webview, settings.payload(ease), settings.delay_ms)
 
 
 def _review_ended() -> None:
-    global _pending_effect
-    _pending_effect = None
+    from .overlay import stop_confetti
     webview = getattr(getattr(mw, "reviewer", None), "web", None)
     if webview is not None:
         try:
-            webview.eval("window.ankiConfetti?.stop()")
+            stop_confetti(webview)
         except RuntimeError:
             pass
 
@@ -286,10 +244,7 @@ def _open_settings() -> None:
     ConfettiSettingsDialog(mw).exec()
 
 
-mw.addonManager.setWebExports(__name__, r"web/.*\.js")
 mw.addonManager.setConfigAction(__name__, _open_settings)
 mw.addonManager.setConfigUpdatedAction(__name__, _update_settings)
-gui_hooks.webview_will_set_content.append(_add_assets)
 gui_hooks.reviewer_did_answer_card.append(_answered)
-gui_hooks.reviewer_did_show_question.append(_question_shown)
 gui_hooks.reviewer_will_end.append(_review_ended)

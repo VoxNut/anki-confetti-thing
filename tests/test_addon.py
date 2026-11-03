@@ -66,6 +66,8 @@ def load_addon():
     hooks = types.SimpleNamespace(
         webview_will_set_content=Hook(),
         reviewer_did_answer_card=Hook(),
+        reviewer_did_show_question=Hook(),
+        reviewer_will_end=Hook(),
     )
     aqt = types.ModuleType("aqt")
     aqt.gui_hooks = hooks
@@ -204,6 +206,8 @@ class IntegrationTests(unittest.TestCase):
         manager.config = {}
         addon._update_settings(manager.config)
         Timer.calls.clear()
+        addon._pending_effect = None
+        addon.mw.reviewer = None
 
     def test_only_reviewer_receives_assets(self):
         Reviewer = type("Reviewer", (), {})
@@ -225,16 +229,36 @@ class IntegrationTests(unittest.TestCase):
     def test_good_answer_schedules_compact_payload(self):
         web = WebView()
         addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
-        self.assertEqual(Timer.calls, [80])
+        self.assertEqual(web.scripts, [], "do not launch while the next card is rendering")
+        addon._question_shown(object())
         self.assertEqual(len(web.scripts), 1)
-        self.assertIn("window.ankiConfetti?.fire(", web.scripts[0])
+        self.assertIn("window.ankiConfetti?.afterCard(", web.scripts[0])
+        self.assertIn('"delay":80', web.scripts[0])
         self.assertNotIn(" ", web.scripts[0])
+        addon._question_shown(object())
+        self.assertEqual(len(web.scripts), 1, "one celebration per graded answer")
 
     def test_again_answer_triggers_by_default(self):
         web = WebView()
         addon._answered(types.SimpleNamespace(web=web), object(), addon.AGAIN)
-        self.assertEqual(Timer.calls, [80])
+        addon._question_shown(object())
         self.assertEqual(len(web.scripts), 1)
+
+    def test_zero_delay_waits_for_next_question(self):
+        addon._update_settings({"delay_ms": 0})
+        web = WebView()
+        addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
+        self.assertEqual(web.scripts, [])
+        addon._question_shown(object())
+        self.assertIn('"delay":0', web.scripts[0])
+
+    def test_leaving_review_discards_pending_effect(self):
+        web = WebView()
+        addon.mw.reviewer = types.SimpleNamespace(web=web)
+        addon._answered(types.SimpleNamespace(web=web), object(), addon.GOOD)
+        addon._review_ended()
+        addon._question_shown(object())
+        self.assertEqual(web.scripts, ["window.ankiConfetti?.stop()"])
 
     def test_hard_answer_does_nothing_by_default(self):
         web = WebView()
@@ -258,6 +282,8 @@ class IntegrationTests(unittest.TestCase):
     def test_hooks_and_exports_are_registered(self):
         self.assertIn(addon._add_assets, hooks.webview_will_set_content)
         self.assertIn(addon._answered, hooks.reviewer_did_answer_card)
+        self.assertIn(addon._question_shown, hooks.reviewer_did_show_question)
+        self.assertIn(addon._review_ended, hooks.reviewer_will_end)
         self.assertEqual(manager.exports[1], r"web/.*\.js")
         self.assertIs(manager.config_action[1], addon._open_settings)
         self.assertIs(manager.updated_action[1], addon._update_settings)

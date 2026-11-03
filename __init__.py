@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from aqt import gui_hooks, mw
-from aqt.qt import QTimer
 from aqt.webview import WebContent
 
 AGAIN = 1
@@ -208,6 +207,7 @@ class Settings:
 
 
 _settings = Settings.load()
+_pending_effect: tuple[Any, dict[str, Any]] | None = None
 
 
 def _update_settings(config: Any) -> None:
@@ -238,16 +238,19 @@ def _asset_urls() -> tuple[str, str]:
     )
 
 
-def _fire(webview: Any, payload: Mapping[str, Any]) -> None:
+def _fire(webview: Any, payload: Mapping[str, Any], *, after_card: bool = False) -> None:
     try:
         encoded = json.dumps(payload, separators=(",", ":"))
-        webview.eval(f"window.ankiConfetti?.fire({encoded})")
+        method = "afterCard" if after_card else "fire"
+        webview.eval(f"window.ankiConfetti?.{method}({encoded})")
     except RuntimeError:
         # The reviewer can be destroyed while a delayed callback is pending.
         pass
 
 
 def _answered(reviewer: Any, _card: Any, ease: int) -> None:
+    global _pending_effect
+    _pending_effect = None
     settings = _settings
     if not settings.matches(ease):
         return
@@ -255,13 +258,26 @@ def _answered(reviewer: Any, _card: Any, ease: int) -> None:
     if webview is None:
         return
     payload = settings.payload(ease)
-    if settings.delay_ms:
-        QTimer.singleShot(
-            settings.delay_ms,
-            lambda view=webview, data=payload: _fire(view, data),
-        )
-    else:
-        _fire(webview, payload)
+    payload["delay"] = settings.delay_ms
+    _pending_effect = (webview, payload)
+
+
+def _question_shown(_card: Any) -> None:
+    global _pending_effect
+    pending, _pending_effect = _pending_effect, None
+    if pending is not None:
+        _fire(*pending, after_card=True)
+
+
+def _review_ended() -> None:
+    global _pending_effect
+    _pending_effect = None
+    webview = getattr(getattr(mw, "reviewer", None), "web", None)
+    if webview is not None:
+        try:
+            webview.eval("window.ankiConfetti?.stop()")
+        except RuntimeError:
+            pass
 
 
 def _open_settings() -> None:
@@ -275,3 +291,5 @@ mw.addonManager.setConfigAction(__name__, _open_settings)
 mw.addonManager.setConfigUpdatedAction(__name__, _update_settings)
 gui_hooks.webview_will_set_content.append(_add_assets)
 gui_hooks.reviewer_did_answer_card.append(_answered)
+gui_hooks.reviewer_did_show_question.append(_question_shown)
+gui_hooks.reviewer_will_end.append(_review_ended)

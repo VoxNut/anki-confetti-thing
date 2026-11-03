@@ -1,12 +1,15 @@
 (() => {
   "use strict";
 
-  if (window.ankiConfetti?.version === 3) return;
+  if (window.ankiConfetti?.version === 4) return;
 
   const state = {
     cannon: null,
     canvas: null,
     timer: 0,
+    launchTimer: 0,
+    frame: 0,
+    generation: 0,
     worker: null,
     textShapes: new Map(),
   };
@@ -19,6 +22,11 @@
       : fallback;
 
   function stop() {
+    state.generation++;
+    clearTimeout(state.launchTimer);
+    state.launchTimer = 0;
+    if (state.frame) cancelAnimationFrame(state.frame);
+    state.frame = 0;
     clearInterval(state.timer);
     state.timer = 0;
     state.cannon?.reset();
@@ -248,5 +256,25 @@
     );
   }
 
-  window.ankiConfetti = { version: 3, fire, stop };
+  function afterCard(payload = {}) {
+    stop();
+    const generation = state.generation;
+    const ready = () => {
+      if (generation !== state.generation) return;
+      // Anki's queue waits for card scripts; two frames let that card paint.
+      state.frame = requestAnimationFrame(() => {
+        state.frame = requestAnimationFrame(() => {
+          state.frame = 0;
+          state.launchTimer = setTimeout(() => {
+            state.launchTimer = 0;
+            if (generation === state.generation) fire(payload);
+          }, clamp(payload.delay || 0, 0, 500));
+        });
+      });
+    };
+    if (typeof window._queueAction === "function") window._queueAction(ready);
+    else ready();
+  }
+
+  window.ankiConfetti = { version: 4, fire, afterCard, stop };
 })();

@@ -86,4 +86,58 @@ assert.equal(launches[4].scalar, 1.8);
 window.ankiConfetti.stop();
 assert.equal(resetCount, 4);
 
+const actions = [];
+const frames = new Map();
+const timers = new Map();
+let handle = 0;
+global._queueAction = (action) => actions.push(action);
+global.requestAnimationFrame = (callback) => {
+  frames.set(++handle, callback);
+  return handle;
+};
+global.cancelAnimationFrame = (id) => frames.delete(id);
+global.setTimeout = (callback, delay) => {
+  timers.set(++handle, { callback, delay });
+  return handle;
+};
+global.clearTimeout = (id) => timers.delete(id);
+function paint() {
+  const pending = [...frames.values()];
+  frames.clear();
+  pending.forEach(callback => callback());
+}
+
+const before = launches.length;
+window.ankiConfetti.afterCard({ ...base, delay: 80 });
+assert.equal(launches.length, before, "wait for Anki's card-script queue");
+assert.equal(frames.size, 0, "do not start before queued card scripts finish");
+actions.shift()();
+paint();
+assert.equal(launches.length, before, "give the next card its first paint");
+paint();
+assert.equal(launches.length, before, "honor the extra configured delay");
+assert.equal([...timers.values()][0].delay, 80);
+const launch = [...timers.values()][0].callback;
+timers.clear();
+launch();
+assert.equal(launches.length, before + 1);
+
+window.ankiConfetti.afterCard(base);
+window.ankiConfetti.stop();
+actions.shift()();
+assert.equal(frames.size, 0, "cancel stale queued celebrations");
+window.ankiConfetti.afterCard(base);
+actions.shift()();
+paint();
+window.ankiConfetti.stop();
+paint();
+assert.equal(timers.size, 0, "cancel celebrations waiting for paint");
+window.ankiConfetti.afterCard(base);
+actions.shift()();
+paint();
+paint();
+window.ankiConfetti.stop();
+assert.equal(timers.size, 0, "cancel delayed launches");
+assert.equal(launches.length, before + 1);
+
 console.log("confetti runtime smoke test passed");

@@ -9,6 +9,8 @@ answers with confetti. Each answer can be enabled or disabled independently.
 - One canvas is reused instead of allocating a canvas for every answer.
 - Rendering uses a web worker when Qt WebEngine supports it.
 - A new answer cancels unfinished effects, preventing stacked animations.
+- Review celebrations wait for Anki's card scripts and first paint, so a heavy
+  note type does not interrupt the start of the animation. Previews stay immediate.
 - Particle counts and animation duration are bounded.
 - Every answer uses the same selected preset and launch controls. Normal
   confetti and Again can each use a configurable, resizable emoji.

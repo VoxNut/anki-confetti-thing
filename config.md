@@ -10,8 +10,8 @@ Use Anki's add-on Config window for a live UI. Its underlying fields are:
 - `colors`: up to 12 CSS hex colors in `#rrggbb` form.
 - `intensity`: particle percentage from 25 to 200.
 - `duration_ms`: fireworks duration from 400 to 4000 milliseconds.
-- `delay_ms`: delay after answering, from 0 to 500 milliseconds. A short delay
-  lets Anki finish drawing the next card first.
+- `delay_ms`: extra delay from 0 to 500 milliseconds after the next card has
+  finished rendering. Even at zero, confetti waits for the card's first paint.
 - `origin_mode`: `center`, `answer_button`, `top`, `bottom`, `left`, `right`,
   or `custom`. Single-origin presets launch from this point.
 - `custom_origin_x` / `custom_origin_y`: percentages used by the `custom`

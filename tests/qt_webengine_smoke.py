@@ -22,12 +22,23 @@ html = """
 <html>
 <head>
   <style>html, body { margin: 0; background: #202124; }</style>
+  <script>
+    window.workerCount = 0;
+    window.Worker = new Proxy(Worker, {
+      construct(target, args) { workerCount++; return new target(...args); }
+    });
+    window._queueAction = action => setTimeout(() => {
+      document.body.dataset.cardReady = "true";
+      action();
+    }, 120);
+  </script>
   <script src="web/canvas-confetti.browser.min.js"></script>
   <script src="web/confetti.js"></script>
 </head>
 <body></body>
 </html>
 """
+early_canvas_count = None
 
 
 def finish() -> None:
@@ -35,6 +46,8 @@ def finish() -> None:
       confetti: typeof window.confetti,
       controller: typeof window.ankiConfetti?.fire,
       canvases: document.querySelectorAll("canvas").length,
+      workerCount,
+      cardReady: document.body.dataset.cardReady === "true",
       reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
       size: [
         document.querySelector("canvas")?.width || 0,
@@ -51,6 +64,7 @@ def finish() -> None:
                 if (color.red(), color.green(), color.blue()) != (32, 33, 36):
                     changed_pixels += 1
         result["changedPixels"] = changed_pixels
+        result["canvasesBeforeCardReady"] = early_canvas_count
         print(json.dumps(result, sort_keys=True))
         valid = (
             result["confetti"] == "function"
@@ -58,6 +72,9 @@ def finish() -> None:
             and result["canvases"] == 1
             and result["size"] == [800, 600]
             and result["changedPixels"] > 0
+            and result["workerCount"] == 1
+            and result["cardReady"]
+            and early_canvas_count == 0
         )
         app.exit(0 if valid else 1)
 
@@ -70,7 +87,7 @@ def loaded(ok: bool) -> None:
         app.exit(1)
         return
     view.page().runJavaScript(
-        """window.ankiConfetti.fire({
+        """window.ankiConfetti.afterCard({
           ease: 1,
           preset: "stars",
           colors: ["#ffffff", "#ff0000"],
@@ -86,7 +103,14 @@ def loaded(ok: bool) -> None:
           worker: true
         })"""
     )
-    QTimer.singleShot(250, finish)
+    def record_early(result: object) -> None:
+        global early_canvas_count
+        early_canvas_count = result
+
+    QTimer.singleShot(40, lambda: view.page().runJavaScript(
+        'document.querySelectorAll("canvas").length', record_early
+    ))
+    QTimer.singleShot(400, finish)
 
 
 view.loadFinished.connect(loaded)
